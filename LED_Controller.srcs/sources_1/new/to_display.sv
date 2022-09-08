@@ -25,6 +25,13 @@ module to_display(
     input var i_clk,
     input var i_reset,
 
+    input var i_R0,
+    input var i_R1,
+    input var i_G0,
+    input var i_G1,
+    input var i_B0,
+    input var i_B1,
+
     output var o_R0,
     output var o_R1,
     output var o_G0,
@@ -90,14 +97,13 @@ always_comb begin : output_logic
         OUTPUT_DATA: begin
             o_lat = 1'b0;
             o_OE = 1'b1;
-            //write white for starters
-            //this should be somthing like address (which is made up of horizontal and vertical line) and itensity modifier
-            o_R0 = 1'b1;
-            o_R1 = 1'b1;
-            o_G0 = 1'b1;
-            o_G1 = 1'b1;
-            o_B0 = 1'b1;
-            o_B1 = 1'b1;
+            
+            o_R0 = i_R0;
+            o_R1 = i_R1;
+            o_G0 = i_G0;
+            o_G1 = i_G1;
+            o_B0 = i_B0;
+            o_B1 = i_B1;
             internal_clk = (clock_counter <= (2 ** (line_write_counter-1)));
 
         end

@@ -54,7 +54,8 @@ end
 
 top_design u_top_design(
     .i_sysclk  (clk       ),
-    .i_btn     (reset     ),
+    .i_btn     ({1'b0, reset}),
+    .i_sw      (1'b0      ),
     .o_rpio_04 (o_rpio_04 ),
     .o_rpio_05 (o_rpio_05 ),
     .o_rpio_06 (o_rpio_06 ),

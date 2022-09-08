@@ -10,7 +10,7 @@ create_clock -period 8.000 -name sys_clk_pin -waveform {0.000 4.000} -add [get_p
 
 ##Switches
 
-# set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports {sw[0]}]
+#set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports {i_sw[0]}]
 # set_property -dict {PACKAGE_PIN M19 IOSTANDARD LVCMOS33} [get_ports {sw[1]}]
 
 ##RGB LEDs
@@ -32,7 +32,7 @@ create_clock -period 8.000 -name sys_clk_pin -waveform {0.000 4.000} -add [get_p
 ##Buttons
 
 set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports {i_btn[0]}]
-# set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports {btn[1]}]
+set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports {i_btn[1]}]
 # set_property -dict {PACKAGE_PIN L20 IOSTANDARD LVCMOS33} [get_ports {btn[2]}]
 # set_property -dict {PACKAGE_PIN L19 IOSTANDARD LVCMOS33} [get_ports {btn[3]}]
 
