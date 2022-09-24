@@ -39,7 +39,7 @@ module to_display(
     output var o_B0,
     output var o_B1,
 
-    output var o_OE,
+    output var o_BLANK,
     output var o_clk,
     output var o_lat,
 
@@ -50,123 +50,147 @@ module to_display(
     output var o_E
 );
 
-enum int unsigned {
-    OUTPUT_DATA = 0,
-    JUMP_TO_START = 1,
-    CHANGE_ROW = 2
-}
-state = OUTPUT_DATA,
-next_state;
+typedef enum {
+    DEASSERT_BLANK,
+    OUTPUT_DATA,
+    WAIT,
+    ASSERT_BLANK,
+    LATCH,
+    CHANGE_ADDRESS
+} display_state_t;
 
-int unsigned BIT_DEPTH = 8;
-int unsigned HORIZONTAL_LENGTH = 64;
-int unsigned VERTICAL_LENGTH = 32; //device the original value by 2 - because of double writing
+display_state_t state = LATCH;
+display_state_t next_state;
 
-logic [5:0] column_addr; //up to 64
+parameter BIT_DEPTH = 8;
+parameter HORIZONTAL_LENGTH = 64;
+parameter VERTICAL_LENGTH = 32; //device the original value by 2 - because of double writing
+
 logic [4:0] row_addr; //up to 32
-logic [2:0] value; // value R G B
 logic [2:0] line_write_counter; //bcm for writing 8 bit colors
-logic [8:0] clock_counter = 1;
-
-var internal_clk;
+logic [12:0] write_wait_counter;
 
 always_comb begin : next_state_logic
 
-    case (state)
+    next_state = state;
+
+    unique case (state)
+        DEASSERT_BLANK: begin
+            next_state = OUTPUT_DATA;
+        end
         OUTPUT_DATA: begin
-            if (column_addr >= HORIZONTAL_LENGTH - 1 && clock_counter >= 2 ** line_write_counter && line_write_counter >= BIT_DEPTH - 1) begin
-                next_state = CHANGE_ROW;
+            if (write_wait_counter >= HORIZONTAL_LENGTH - 1 && line_write_counter == 0) begin
+                next_state = ASSERT_BLANK; 
             end
-            else if (column_addr >= HORIZONTAL_LENGTH - 1 && clock_counter >= 2 ** line_write_counter) begin
-                next_state = JUMP_TO_START;
-            end
-            else begin 
-                next_state = OUTPUT_DATA;
+            else if (write_wait_counter >= HORIZONTAL_LENGTH - 1) begin //if output done
+                next_state = WAIT; 
+            end 
+        end
+        WAIT: begin
+            if (write_wait_counter >= (HORIZONTAL_LENGTH * 2 ** line_write_counter) - 1)  begin //if waiting done
+                next_state = ASSERT_BLANK; 
             end
         end
-        JUMP_TO_START:
-            next_state = OUTPUT_DATA;
-        CHANGE_ROW: begin
-            next_state = OUTPUT_DATA;
+        ASSERT_BLANK: begin
+            next_state = LATCH;
+        end
+        LATCH: begin
+            next_state = CHANGE_ADDRESS;
+        end
+        CHANGE_ADDRESS: begin
+            next_state = DEASSERT_BLANK;
         end
     endcase
+
 end
 
 always_comb begin : output_logic
-    case (state) 
+
+    o_BLANK = 0;
+    o_lat = 0;
+
+    unique case (state)
+        DEASSERT_BLANK: begin
+        end
         OUTPUT_DATA: begin
-            o_lat = 1'b0;
-            o_OE = 1'b1;
-            
-            o_R0 = i_R0;
-            o_R1 = i_R1;
-            o_G0 = i_G0;
-            o_G1 = i_G1;
-            o_B0 = i_B0;
-            o_B1 = i_B1;
-            internal_clk = (clock_counter <= (2 ** (line_write_counter-1)));
-
         end
-        JUMP_TO_START: begin
-            o_lat = 1'b1;
-            o_OE = 1'b1;
-            internal_clk = 1'b0;
+        WAIT: begin
         end
-
-        CHANGE_ROW: begin
-            o_lat = 1'b1;
-            o_OE = 1'b0;
-            internal_clk = 1'b0;
+        ASSERT_BLANK: begin
+            o_BLANK = 1;
+        end
+        LATCH: begin
+            o_BLANK = 1;
+            o_lat = 1;
+        end
+        CHANGE_ADDRESS: begin
+            o_BLANK = 1;
         end
     endcase
 end
 
 always_ff @(posedge i_clk) begin : name
     if (i_reset) begin
-        state <= OUTPUT_DATA;
-        column_addr <= 6'b000000;
-        row_addr <= 5'b00000;
-        line_write_counter <= 3'b000;
-        clock_counter <= 1;
+        state <= DEASSERT_BLANK;
+        row_addr <= 0;
+        line_write_counter <= 0;
+        write_wait_counter <= 0;
+
     end
     else begin
-        case (state)
+
+        //default:
+        state <= next_state;
+        row_addr <= row_addr;
+        line_write_counter <= line_write_counter;
+        write_wait_counter <= write_wait_counter;
+
+        unique case (state)
+            DEASSERT_BLANK: begin
+                
+            end
             OUTPUT_DATA: begin
-                if(clock_counter >= 2 ** line_write_counter) begin
-                    clock_counter <= 1;
-                    column_addr <= column_addr + 1;
+                write_wait_counter <= write_wait_counter + 1;
+            end
+            WAIT: begin
+                write_wait_counter <= write_wait_counter + 1;
+            end
+            ASSERT_BLANK: begin
+
+            end
+            CHANGE_ADDRESS: begin
+                if (line_write_counter < (BIT_DEPTH - 1)) begin
+                    line_write_counter <= line_write_counter + 1;
                 end
                 else begin
-                    clock_counter <= clock_counter + 1;
+
+                    line_write_counter <= 0;
+
+                    if (row_addr >= VERTICAL_LENGTH - 1) begin
+                        row_addr <= 0; 
+                    end else begin
+                        row_addr <= row_addr + 1; 
+                    end    
                 end
             end
-            JUMP_TO_START: begin
-                clock_counter <= 1;
-                column_addr <= 0;
-                line_write_counter <= line_write_counter + 1;
-            end
-            CHANGE_ROW: begin
-                if (row_addr < VERTICAL_LENGTH) begin
-                    row_addr <= row_addr + 1;
-                end
-                else begin
-                    row_addr = 0;
-                end
-                clock_counter <= 1;
-                line_write_counter <= 0;
+            LATCH: begin
+                write_wait_counter <= 0;
             end
         endcase
-
-        //clock devider logic goes here:
-
-        state <= next_state;
     end
 end
 
 assign {o_E, o_D, o_C, o_B, o_A} = row_addr;
 
-//multiplexer
-assign o_clk = (state == OUTPUT_DATA && line_write_counter == 0) ? i_clk : (state == OUTPUT_DATA) ? internal_clk : 0;
+//multiplexer for shift register clock
+assign o_clk = (state == OUTPUT_DATA) ? i_clk : 0;
+
+assign o_R0 = i_R0;
+assign o_R1 = i_R1;
+assign o_G0 = i_G0;
+assign o_G1 = i_G1;
+assign o_B0 = i_B0;
+assign o_B1 = i_B1;
 
 
 endmodule

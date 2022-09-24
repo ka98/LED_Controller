@@ -50,23 +50,7 @@ typedef enum logic[2:0] {
 color_t state; 
 color_t next_state; 
 
-// logic is_being_pressed = 0;
-
-always_comb begin : next_state_logic
-    // if (i_button && !is_being_pressed) begin
-    if (i_button) begin
-        next_state = color_t'(state + 1);
-        // is_being_pressed = 1;
-    end 
-    else if (!i_button) begin
-        next_state = state;
-        // is_being_pressed = 0;
-    end
-    else begin
-        next_state = state;
-        // is_being_pressed = is_being_pressed;
-    end
-end
+logic is_being_pressed = 0;
 
 always_comb begin : output_logic
     {o_B0, o_G0, o_R0} = state;
@@ -78,6 +62,18 @@ always_ff @(posedge i_clk) begin : state_logic
         state <= RED;
     end
     else begin
+        if (i_button && !is_being_pressed) begin
+            next_state <= color_t'(state + 1);
+            is_being_pressed <= 1;
+        end 
+        else if (!i_button) begin
+            next_state <= state;
+            is_being_pressed <= 0;
+        end
+        else begin
+            next_state <= state;
+            is_being_pressed <= is_being_pressed;
+        end
         state <= next_state;
     end
 end
