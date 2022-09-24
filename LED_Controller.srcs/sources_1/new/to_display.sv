@@ -62,6 +62,13 @@ typedef enum {
 display_state_t state = LATCH;
 display_state_t next_state;
 
+logic R0;
+logic R1;
+logic G0;
+logic G1;
+logic B0;
+logic B1;
+
 parameter BIT_DEPTH = 8;
 parameter HORIZONTAL_LENGTH = 64;
 parameter VERTICAL_LENGTH = 32; //device the original value by 2 - because of double writing
@@ -109,10 +116,23 @@ always_comb begin : output_logic
     o_BLANK = 0;
     o_lat = 0;
 
+    o_R0 = 0;
+    o_R1 = 0;
+    o_G0 = 0;
+    o_G1 = 0;
+    o_B0 = 0;
+    o_B1 = 0;
+
     unique case (state)
         DEASSERT_BLANK: begin
         end
         OUTPUT_DATA: begin
+            o_R0 = R0;
+            o_R1 = R1;
+            o_G0 = G0;
+            o_G1 = G1;
+            o_B0 = B0;
+            o_B1 = B1;
         end
         WAIT: begin
         end
@@ -135,9 +155,23 @@ always_ff @(posedge i_clk) begin : name
         row_addr <= 0;
         line_write_counter <= 0;
         write_wait_counter <= 0;
+        R0 <= 0;
+        R1 <= 0;
+        G0 <= 0;
+        G1 <= 0;
+        B0 <= 0;
+        B1 <= 0;
 
     end
     else begin
+
+        R0 <= i_R0;
+        R1 <= i_R1;
+        G0 <= i_G0;
+        G1 <= i_G1;
+        B0 <= i_B0;
+        B1 <= i_B1;
+
 
         //default:
         state <= next_state;
@@ -184,13 +218,6 @@ assign {o_E, o_D, o_C, o_B, o_A} = row_addr;
 
 //multiplexer for shift register clock
 assign o_clk = (state == OUTPUT_DATA) ? i_clk : 0;
-
-assign o_R0 = i_R0;
-assign o_R1 = i_R1;
-assign o_G0 = i_G0;
-assign o_G1 = i_G1;
-assign o_B0 = i_B0;
-assign o_B1 = i_B1;
 
 
 endmodule
