@@ -51,12 +51,10 @@ module to_display(
 );
 
 typedef enum {
-    DEASSERT_BLANK,
     OUTPUT_DATA,
-    WAIT,
-    ASSERT_BLANK,
+    BLANK,
     LATCH,
-    CHANGE_ADDRESS
+    WAIT
 } display_state_t;
 
 display_state_t state = LATCH;
@@ -82,30 +80,25 @@ always_comb begin : next_state_logic
     next_state = state;
 
     unique case (state)
-        DEASSERT_BLANK: begin
-            next_state = OUTPUT_DATA;
-        end
         OUTPUT_DATA: begin
-            if (write_wait_counter >= HORIZONTAL_LENGTH - 1 && line_write_counter == 0) begin
-                next_state = ASSERT_BLANK; 
-            end
-            else if (write_wait_counter >= HORIZONTAL_LENGTH - 1) begin //if output done
-                next_state = WAIT; 
-            end 
-        end
-        WAIT: begin
-            if (write_wait_counter >= (HORIZONTAL_LENGTH * 2 ** line_write_counter) - 1)  begin //if waiting done
-                next_state = ASSERT_BLANK; 
+            if (write_wait_counter >= HORIZONTAL_LENGTH - 1) begin //continue when writing is done
+                next_state = BLANK; 
             end
         end
-        ASSERT_BLANK: begin
+        BLANK: begin
             next_state = LATCH;
         end
         LATCH: begin
-            next_state = CHANGE_ADDRESS;
+            if (line_write_counter == (BIT_DEPTH - 1)) begin //jump over wait when at LSB
+                next_state = WAIT; 
+            end else begin
+                next_state = WAIT; 
+            end
         end
-        CHANGE_ADDRESS: begin
-            next_state = DEASSERT_BLANK;
+        WAIT: begin
+            if (write_wait_counter >= (HORIZONTAL_LENGTH * 2 ** ((BIT_DEPTH - 1) - line_write_counter)) - 1) begin //if waiting done
+                next_state = OUTPUT_DATA; 
+            end
         end
     endcase
 
@@ -124,8 +117,6 @@ always_comb begin : output_logic
     o_B1 = 0;
 
     unique case (state)
-        DEASSERT_BLANK: begin
-        end
         OUTPUT_DATA: begin
             o_R0 = R0;
             o_R1 = R1;
@@ -134,24 +125,21 @@ always_comb begin : output_logic
             o_B0 = B0;
             o_B1 = B1;
         end
-        WAIT: begin
-        end
-        ASSERT_BLANK: begin
+        BLANK: begin
             o_BLANK = 1;
         end
         LATCH: begin
             o_BLANK = 1;
             o_lat = 1;
         end
-        CHANGE_ADDRESS: begin
-            o_BLANK = 1;
+        WAIT: begin
         end
     endcase
 end
 
-always_ff @(posedge i_clk) begin : name
+always_ff @(posedge i_clk or posedge i_reset) begin : name
     if (i_reset) begin
-        state <= DEASSERT_BLANK;
+        state <= OUTPUT_DATA;
         row_addr <= 0;
         line_write_counter <= 0;
         write_wait_counter <= 0;
@@ -172,7 +160,6 @@ always_ff @(posedge i_clk) begin : name
         B0 <= i_B0;
         B1 <= i_B1;
 
-
         //default:
         state <= next_state;
         row_addr <= row_addr;
@@ -180,19 +167,17 @@ always_ff @(posedge i_clk) begin : name
         write_wait_counter <= write_wait_counter;
 
         unique case (state)
-            DEASSERT_BLANK: begin
-                
-            end
             OUTPUT_DATA: begin
                 write_wait_counter <= write_wait_counter + 1;
             end
-            WAIT: begin
-                write_wait_counter <= write_wait_counter + 1;
+            BLANK: begin
+                
             end
-            ASSERT_BLANK: begin
+            LATCH: begin
+                write_wait_counter <= 0;
 
-            end
-            CHANGE_ADDRESS: begin
+                //change address
+
                 if (line_write_counter < (BIT_DEPTH - 1)) begin
                     line_write_counter <= line_write_counter + 1;
                 end
@@ -207,8 +192,8 @@ always_ff @(posedge i_clk) begin : name
                     end    
                 end
             end
-            LATCH: begin
-                write_wait_counter <= 0;
+            WAIT: begin
+                write_wait_counter <= write_wait_counter + 1;
             end
         endcase
     end

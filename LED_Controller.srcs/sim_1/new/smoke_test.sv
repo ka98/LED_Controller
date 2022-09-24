@@ -12,9 +12,7 @@
 // Tool Versions: 
 // Description: 
 // 
-// Dependencies: 
-// 
-// Revision:
+// Dependencies: negedge
 // Revision 0.01 - File Created
 // Additional Comments:
 // 
@@ -35,11 +33,13 @@ module smoke_test(
     output var o_rpio_23,
     output var o_rpio_24,
     output var o_rpio_26,
-    output var o_rpio_27
+    output var o_rpio_27,
+
+    output var [3:0] o_led
 
 );
 
-localparam period = 20.0; //50 Mhz
+localparam period = 8.0; //125 Mhz
 logic clk = 0;
 tri tri_clk;
 logic reset;
@@ -74,7 +74,7 @@ tri b_FIXED_IO_ps_srstb = '0;
 
 sim_top_design u_top_design(
     .i_sysclk            (clk                 ),
-    .i_rst               (reset               ),
+    .i_btn               ({reset, 0}       ),
     .o_rpio_04           (o_rpio_04           ),
     .o_rpio_05           (o_rpio_05           ),
     .o_rpio_06           (o_rpio_06           ),
@@ -88,7 +88,8 @@ sim_top_design u_top_design(
     .o_rpio_23           (o_rpio_23           ),
     .o_rpio_24           (o_rpio_24           ),
     .o_rpio_26           (o_rpio_26           ),
-    .o_rpio_27           (o_rpio_27           )
+    .o_rpio_27           (o_rpio_27           ),
+    .o_led               (o_led               )
 );
 
 

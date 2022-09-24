@@ -24,7 +24,7 @@
 module sim_top_design(
 
     input var i_sysclk,
-    input var i_rst,
+    input var [1:0] i_btn,
 
     output var o_rpio_04,
     output var o_rpio_05,
@@ -41,14 +41,25 @@ module sim_top_design(
     output var o_rpio_26,
     output var o_rpio_27,
 
-    output var [1:0] o_led
+    output var [3:0] o_led
 
     );
 
-tri clk_50Mhz;
-tri clk_reset;
+tri reset;
+tri reset_ps_clk;
+assign reset = i_btn[0];
 
-assign clk_50Mhz = i_sysclk;
+tri clk_125Mhz;
+tri clk_50Mhz;
+tri clk_5Mhz;
+tri locked;
+
+assign clk_125Mhz = i_sysclk;
+
+assign o_led[0] = reset;
+assign o_led[1] = i_sysclk;
+assign o_led[2] = clk_50Mhz;
+assign o_led[3] = locked;
 
 tri red0;
 tri red1;
@@ -72,9 +83,20 @@ tri output_C;
 tri output_D;
 tri output_E;
 
+tri reset_to_display;
+assign reset_to_display = reset || !locked;
+
+
+clk_wiz_1 u_clk_wiz_1(
+    .clk_out1 (clk_50Mhz ),
+    .reset    (reset    ),
+    .locked   (locked   ),
+    .clk_in1  (clk_125Mhz  )
+);
+
 to_display u_to_display(
     .i_clk (clk_50Mhz),
-    .i_reset (i_rst),
+    .i_reset (reset_to_display),
     .i_R0  (red0     ),
     .i_R1  (red1     ),
     .i_G0  (green0   ),

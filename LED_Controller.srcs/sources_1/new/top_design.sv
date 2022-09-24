@@ -46,6 +46,7 @@ module top_design(
     );
 
 tri reset;
+tri reset_display;
 tri reset_ps_clk;
 assign reset = i_btn[0];
 
@@ -84,10 +85,10 @@ tri output_D;
 tri output_E;
 
 tri reset_to_display;
-assign reset_to_display = reset;
+assign reset_to_display = reset || !locked;
 
 
-clk_wiz_0 u_clk_wiz_0(
+clk_wiz_1 u_clk_wiz_1(
     .clk_out1 (clk_50Mhz ),
     .reset    (reset    ),
     .locked   (locked   ),
