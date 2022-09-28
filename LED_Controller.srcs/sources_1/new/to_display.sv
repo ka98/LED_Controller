@@ -25,32 +25,35 @@ module to_display(
     input var i_clk,
     input var i_reset,
 
-    input var i_R0,
-    input var i_R1,
-    input var i_G0,
-    input var i_G1,
-    input var i_B0,
-    input var i_B1,
+    input var [7:0]i_R0,
+    input var [7:0]i_R1,
+    input var [7:0]i_G0,
+    input var [7:0]i_G1,
+    input var [7:0]i_B0,
+    input var [7:0]i_B1,
 
-    output var o_R0,
-    output var o_R1,
-    output var o_G0,
-    output var o_G1,
-    output var o_B0,
-    output var o_B1,
+    output logic o_R0,
+    output logic o_R1,
+    output logic o_G0,
+    output logic o_G1,
+    output logic o_B0,
+    output logic o_B1,
 
-    output var o_BLANK,
-    output var o_clk,
-    output var o_lat,
+    output logic o_BLANK,
+    output logic o_clk,
+    output logic o_lat,
 
-    output var o_A,
-    output var o_B,
-    output var o_C,
-    output var o_D,
-    output var o_E
+    output logic o_A,
+    output logic o_B,
+    output logic o_C,
+    output logic o_D,
+    output logic o_E,
+
+    output logic [11:0]o_address0,
+    output logic [11:0]o_address1
 );
 
-typedef enum {
+typedef enum bit[1:0] {
     OUTPUT_DATA,
     BLANK,
     LATCH,
@@ -73,7 +76,7 @@ parameter VERTICAL_LENGTH = 32; //device the original value by 2 - because of do
 
 logic [4:0] row_addr; //up to 32
 logic [2:0] line_write_counter; //bcm for writing 8 bit colors
-logic [12:0] write_wait_counter;
+logic [12:0] write_wait_counter; //lowest [5:0] bits are also x position
 
 always_comb begin : next_state_logic
 
@@ -153,12 +156,12 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
     end
     else begin
 
-        R0 <= i_R0;
-        R1 <= i_R1;
-        G0 <= i_G0;
-        G1 <= i_G1;
-        B0 <= i_B0;
-        B1 <= i_B1;
+        R0 <= 0;
+        R1 <= 0;
+        G0 <= 0;
+        G1 <= 0;
+        B0 <= 0;
+        B1 <= 0;
 
         //default:
         state <= next_state;
@@ -169,6 +172,12 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
         unique case (state)
             OUTPUT_DATA: begin
                 write_wait_counter <= write_wait_counter + 1;
+                R0 <= i_R0[(BIT_DEPTH - 1) - line_write_counter];
+                R1 <= i_R1[(BIT_DEPTH - 1) - line_write_counter];
+                G0 <= i_G0[(BIT_DEPTH - 1) - line_write_counter];
+                G1 <= i_G1[(BIT_DEPTH - 1) - line_write_counter];
+                B0 <= i_B0[(BIT_DEPTH - 1) - line_write_counter];
+                B1 <= i_B1[(BIT_DEPTH - 1) - line_write_counter];
             end
             BLANK: begin
                 
@@ -204,5 +213,7 @@ assign {o_E, o_D, o_C, o_B, o_A} = row_addr;
 //multiplexer for shift register clock
 assign o_clk = (state == OUTPUT_DATA) ? i_clk : 0;
 
+assign o_address0 = write_wait_counter[5:0] + (row_addr * 64); //x
+assign o_address1 = write_wait_counter[5:0] + ((row_addr+32) * 64); //y
 
 endmodule

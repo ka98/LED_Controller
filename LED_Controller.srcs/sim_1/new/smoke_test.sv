@@ -72,7 +72,7 @@ tri [53:0]b_FIXED_IO_mio = '0;
 tri b_FIXED_IO_ps_porb = '0;
 tri b_FIXED_IO_ps_srstb = '0;
 
-sim_top_design u_top_design(
+top_design u_top_design(
     .i_sysclk            (clk                 ),
     .i_btn               ({reset, 0}       ),
     .o_rpio_04           (o_rpio_04           ),

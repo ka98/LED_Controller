@@ -39,6 +39,10 @@ def Convert(ImageName):
     if img.mode != 'RGB':
         img = img.convert('RGB')
 
+    #resize to 64x64
+    
+    img = img.resize((64,64))
+
     # Store Width and height of image
     width = img.size[0]
     height = img.size[1]
