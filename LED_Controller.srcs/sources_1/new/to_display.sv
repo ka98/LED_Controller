@@ -32,32 +32,33 @@ module to_display(
     input var [7:0]i_B0,
     input var [7:0]i_B1,
 
-    output logic o_R0,
-    output logic o_R1,
-    output logic o_G0,
-    output logic o_G1,
-    output logic o_B0,
-    output logic o_B1,
+    output var o_R0,
+    output var o_R1,
+    output var o_G0,
+    output var o_G1,
+    output var o_B0,
+    output var o_B1,
 
-    output logic o_BLANK,
-    output logic o_clk,
-    output logic o_lat,
+    output var o_BLANK,
+    output var o_clk,
+    output var o_lat,
 
-    output logic o_A,
-    output logic o_B,
-    output logic o_C,
-    output logic o_D,
-    output logic o_E,
+    output var o_A,
+    output var o_B,
+    output var o_C,
+    output var o_D,
+    output var o_E,
 
-    output logic [11:0]o_address0,
-    output logic [11:0]o_address1
+    output var [11:0]o_address0,
+    output var [11:0]o_address1
 );
 
-typedef enum bit[1:0] {
+typedef enum bit[2:0] {
     OUTPUT_DATA,
     BLANK,
     LATCH,
-    WAIT
+    WAIT,
+    CHANGE_ADDRESS
 } display_state_t;
 
 display_state_t state = LATCH;
@@ -70,13 +71,14 @@ logic G1;
 logic B0;
 logic B1;
 
-parameter BIT_DEPTH = 8;
+parameter BIT_DEPTH = 7; //Display Bitrate
+parameter RAM_BIT_DEPTH = 8; //Bitrate used in RAM
 parameter HORIZONTAL_LENGTH = 64;
 parameter VERTICAL_LENGTH = 32; //device the original value by 2 - because of double writing
 
-logic [4:0] row_addr; //up to 32
-logic [2:0] line_write_counter; //bcm for writing 8 bit colors
-logic [12:0] write_wait_counter; //lowest [5:0] bits are also x position
+logic [4:0] row_addr = 0; //up to 32
+logic [2:0] line_write_counter = 0;  //bcm for writing 8 bit colors
+logic [12:0] write_wait_counter = 0; //lowest [5:0] bits are also x position
 
 always_comb begin : next_state_logic
 
@@ -93,15 +95,18 @@ always_comb begin : next_state_logic
         end
         LATCH: begin
             if (line_write_counter == (BIT_DEPTH - 1)) begin //jump over wait when at LSB
-                next_state = WAIT; 
+                next_state = CHANGE_ADDRESS;
             end else begin
                 next_state = WAIT; 
             end
         end
         WAIT: begin
             if (write_wait_counter >= (HORIZONTAL_LENGTH * 2 ** ((BIT_DEPTH - 1) - line_write_counter)) - 1) begin //if waiting done
-                next_state = OUTPUT_DATA; 
+                next_state = CHANGE_ADDRESS; 
             end
+        end
+        CHANGE_ADDRESS: begin
+            next_state = OUTPUT_DATA;
         end
     endcase
 
@@ -137,6 +142,8 @@ always_comb begin : output_logic
         end
         WAIT: begin
         end
+        CHANGE_ADDRESS: begin
+        end
     endcase
 end
 
@@ -156,12 +163,12 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
     end
     else begin
 
-        R0 <= 0;
-        R1 <= 0;
-        G0 <= 0;
-        G1 <= 0;
-        B0 <= 0;
-        B1 <= 0;
+        R0 <= i_R0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        R1 <= i_R1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        G0 <= i_G0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        G1 <= i_G1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        B0 <= i_B0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        B1 <= i_B1[(RAM_BIT_DEPTH - 1) - line_write_counter];
 
         //default:
         state <= next_state;
@@ -172,20 +179,17 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
         unique case (state)
             OUTPUT_DATA: begin
                 write_wait_counter <= write_wait_counter + 1;
-                R0 <= i_R0[(BIT_DEPTH - 1) - line_write_counter];
-                R1 <= i_R1[(BIT_DEPTH - 1) - line_write_counter];
-                G0 <= i_G0[(BIT_DEPTH - 1) - line_write_counter];
-                G1 <= i_G1[(BIT_DEPTH - 1) - line_write_counter];
-                B0 <= i_B0[(BIT_DEPTH - 1) - line_write_counter];
-                B1 <= i_B1[(BIT_DEPTH - 1) - line_write_counter];
             end
             BLANK: begin
                 
             end
             LATCH: begin
+            end
+            WAIT: begin
+                write_wait_counter <= write_wait_counter + 1;
+            end
+            CHANGE_ADDRESS: begin
                 write_wait_counter <= 0;
-
-                //change address
 
                 if (line_write_counter < (BIT_DEPTH - 1)) begin
                     line_write_counter <= line_write_counter + 1;
@@ -200,9 +204,6 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
                         row_addr <= row_addr + 1; 
                     end    
                 end
-            end
-            WAIT: begin
-                write_wait_counter <= write_wait_counter + 1;
             end
         endcase
     end
