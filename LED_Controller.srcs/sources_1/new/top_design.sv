@@ -89,8 +89,7 @@ assign reset_to_display = reset || !locked;
 tri [23:0]data;
 tri [5:0]x;
 tri [4:0]y;
-tri [11:0]address0;
-tri [11:0]address1;
+tri [10:0]address;
 
 tri [7:0]R0;
 tri [7:0]G0;
@@ -99,32 +98,23 @@ tri [7:0]R1;
 tri [7:0]G1;
 tri [7:0]B1;
 
-dist_mem_gen_0 u_dist_mem_gen_0(
-    .a(address0),
+frame_buffer u_frame_buffer_0(
+    .a(0),
     .d(0),
-    .dpra(address1),
+    .dpra(address),
     .clk(clk_30Mhz),
     .we(0),
-    .spo({R0, G0, B0}),
-    .dpo({R1, G1, B1})
+    .dpo({R0, G0, B0})
 );
 
-// ram_fetcher u_ram_fetcher(
-//     .i_clk     (clk_100Mhz   ),
-//     .i_rst     (reset_to_display),
-//     .i_data    (data         ),
-//     .i_x       (x          ),
-//     .i_y       (y          ),
-//     .o_address (address      ),
-//     .o_R0      (R0         ),
-//     .o_G0      (G0         ),
-//     .o_B0      (B0         ),
-//     .o_R1      (R1         ),
-//     .o_G1      (G1         ),
-//     .o_B1      (B1         )
-// );
-
-
+frame_buffer u_frame_buffer_1(
+    .a(0),
+    .d(0),
+    .dpra(address),
+    .clk(clk_30Mhz),
+    .we(0),
+    .dpo({R1, G1, B1})
+);
 
 clk_wiz_1 u_clk_wiz_1(
     .clk_out1 (clk_30Mhz ),
@@ -156,8 +146,7 @@ to_display u_to_display(
     .o_C          (output_C),
     .o_D          (output_D),
     .o_E          (output_E),
-    .o_address0   (address0),
-    .o_address1   (address1)
+    .o_address   (address)
 );
 
 assign o_rpio_05 = output_R0;    
@@ -195,16 +184,6 @@ generic_io u_generic_io(
     .probe_in12 (output_D     ),
     .probe_in13 (output_E     )
 );
-
-// color_vio u_color_vio(
-//     .clk        (clk_125Mhz ),
-//     .probe_out0 (red0 ),
-//     .probe_out1 (red1 ),
-//     .probe_out2 (green0 ),
-//     .probe_out3 (green1 ),
-//     .probe_out4 (blue0 ),
-//     .probe_out5 (blue1 )
-// );
 
 
 endmodule

@@ -49,8 +49,7 @@ module to_display(
     output var o_D,
     output var o_E,
 
-    output var [11:0]o_address0,
-    output var [11:0]o_address1
+    output var [10:0]o_address
 );
 
 typedef enum bit[2:0] {
@@ -214,7 +213,6 @@ assign {o_E, o_D, o_C, o_B, o_A} = row_addr;
 //multiplexer for shift register clock
 assign o_clk = (state == OUTPUT_DATA) ? i_clk : 0;
 
-assign o_address0 = write_wait_counter[5:0] + (row_addr * 64); //x
-assign o_address1 = write_wait_counter[5:0] + ((row_addr+32) * 64); //y
+assign o_address = write_wait_counter[5:0] + (row_addr * 64);
 
 endmodule
