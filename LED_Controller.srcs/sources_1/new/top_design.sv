@@ -90,6 +90,10 @@ tri [23:0]data;
 tri [5:0]x;
 tri [4:0]y;
 tri [10:0]address;
+tri [10:0]write_address;
+tri write_select;
+tri enable_write;
+tri [23:0]write_value;
 
 tri [7:0]R0;
 tri [7:0]G0;
@@ -98,21 +102,30 @@ tri [7:0]R1;
 tri [7:0]G1;
 tri [7:0]B1;
 
+test_write u_test_write(
+    .i_clk     (clk_125Mhz    ),
+    .i_rst     (reset         ),
+    .o_address ({write_select, write_address}),
+    .o_value   (write_value   ),
+    .o_write_enable (enable_write)
+);
+
+
 frame_buffer u_frame_buffer_0(
-    .a(0),
-    .d(0),
+    .a(write_address),
+    .d(write_value),
     .dpra(address),
     .clk(clk_30Mhz),
-    .we(0),
+    .we((~write_select & enable_write)),
     .dpo({R0, G0, B0})
 );
 
 frame_buffer u_frame_buffer_1(
-    .a(0),
-    .d(0),
+    .a(write_address),
+    .d(write_value),
     .dpra(address),
     .clk(clk_30Mhz),
-    .we(0),
+    .we((write_select & enable_write)),
     .dpo({R1, G1, B1})
 );
 
