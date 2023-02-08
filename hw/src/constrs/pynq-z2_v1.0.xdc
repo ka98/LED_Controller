@@ -5,11 +5,11 @@
 
 ## Clock signal 125 MHz
 
-set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports i_sysclk]
-create_clock -period 8.000 -name i_sysclk -waveform {0.000 4.000} -add [get_ports i_sysclk]
+# set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports i_sysclk]
+# create_clock -period 8.000 -name i_sysclk -waveform {0.000 4.000} -add [get_ports i_sysclk]
 
-## Generated Clk 30 MHz
-create_clock -period 33.333 -name clk_30Mhz -waveform {0.000 16.667} -add [get_nets u_clk_wiz_1/clk_out1]
+# ## Generated Clk 30 MHz
+# create_clock -period 33.333 -name clk_30Mhz -waveform {0.000 16.667} -add [get_nets u_clk_wiz_1/clk_out1]
 
 ##Switches
 
@@ -27,15 +27,15 @@ create_clock -period 33.333 -name clk_30Mhz -waveform {0.000 16.667} -add [get_n
 
 ##LEDs
 
-set_property -dict {PACKAGE_PIN R14 IOSTANDARD LVCMOS33} [get_ports {o_led[0]}]
-set_property -dict {PACKAGE_PIN P14 IOSTANDARD LVCMOS33} [get_ports {o_led[1]}]
-set_property -dict {PACKAGE_PIN N16 IOSTANDARD LVCMOS33} [get_ports {o_led[2]}]
-set_property -dict {PACKAGE_PIN M14 IOSTANDARD LVCMOS33} [get_ports {o_led[3]}]
+# set_property -dict {PACKAGE_PIN R14 IOSTANDARD LVCMOS33} [get_ports {o_led[0]}]
+# set_property -dict {PACKAGE_PIN P14 IOSTANDARD LVCMOS33} [get_ports {o_led[1]}]
+# set_property -dict {PACKAGE_PIN N16 IOSTANDARD LVCMOS33} [get_ports {o_led[2]}]
+set_property -dict {PACKAGE_PIN M14 IOSTANDARD LVCMOS33} [get_ports {o_led3}]
 
-##Buttons
+# ##Buttons
 
-set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports {i_btn[0]}]
-set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports {i_btn[1]}]
+# set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports {i_btn[0]}]
+# set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports {i_btn[1]}]
 # set_property -dict {PACKAGE_PIN L20 IOSTANDARD LVCMOS33} [get_ports {btn[2]}]
 # set_property -dict {PACKAGE_PIN L19 IOSTANDARD LVCMOS33} [get_ports {btn[3]}]
 
@@ -196,29 +196,29 @@ set_property -dict {PACKAGE_PIN V7 IOSTANDARD LVCMOS33} [get_ports o_rpio_27]
 
 #set_property -dict { PACKAGE_PIN J15   IOSTANDARD LVCMOS33 } [get_ports { crypto_sda }]; #IO_25_35 Sch=crypto_sda
 
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_04]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_04]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_05]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_05]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_06]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_06]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_12]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_12]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_13]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_13]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_16]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_16]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_20]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_20]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_21]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_21]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_22]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_22]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_23]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_23]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_24]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_24]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_26]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_26]
-set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_27]
-set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_27]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_04]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_04]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_05]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_05]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_06]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_06]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_12]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_12]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_13]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_13]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_16]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_16]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_20]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_20]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_21]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_21]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_22]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_22]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_23]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_23]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_24]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_24]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_26]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_26]
+# set_output_delay -clock [get_clocks clk_30Mhz] -min -add_delay -3.000 [get_ports o_rpio_27]
+# set_output_delay -clock [get_clocks clk_30Mhz] -max -add_delay 15.000 [get_ports o_rpio_27]
