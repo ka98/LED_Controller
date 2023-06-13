@@ -1,6 +1,6 @@
 #if LED_Controller folder does not exist - create project, otherwise update source files!
 
-.PHONY: all clean
+.PHONY: all clean sim
 
 all: 
 	make LED_Controller
@@ -8,6 +8,9 @@ all:
 
 LED_Controller:
 	make create_proj
+
+sim:
+	make -C sim
 
 create_proj:
 	vivado -mode batch -nojournal -source ./create_proj.tcl

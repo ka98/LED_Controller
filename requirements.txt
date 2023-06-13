@@ -1,0 +1,21 @@
+attrs==22.2.0
+cocotb==1.7.2
+cocotb-bus==0.1.1 # old version bc. of bug with > 0.1.1 hangs when using AXI with verilator
+cocotb-test==0.2.4
+cocotbext-axi==0.1.20
+cocotbext-eth==0.1.20
+cocotbext-pcie==0.2.12
+cocotbext-spi==0.3.2
+cocotbext-uart==0.1.2
+cocotbext-wishbone==0.2.2
+exceptiongroup==1.1.1
+find-libpython==0.3.0
+iniconfig==2.0.0
+#numpy==1.24.2
+packaging==23.0
+#pkg_resources==0.0.0
+pluggy==1.0.0
+pytest==7.2.2
+tomli==2.0.1
+labgrid
+npyscreen
