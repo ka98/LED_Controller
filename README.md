@@ -16,21 +16,22 @@ The Project was built using Vivado **2022.1**
 
 ## Building and running
 
-you can directly build and run the project by using the following command
-the script expects:
-
-- vivado/bin being part of $PATH
-- Vitis being stored to `/opt/xilinx/Vitis/2022.1`
+you can directly build and run the project by using the following command:
 
 ```shell
 make all
 ```
 
+the script expects:
+
+- vivado/bin being part of $PATH
+- Vitis being stored to `/opt/xilinx/Vitis/2022.1`
+
 ## Known-Issues
 
 The ICs on the pixel matrix i use (Adafruit 64x64 3mm) are only able to be driven with a 30Mhz clock, so i have to set `BIT_DEPTH` to 7 bits to keep a useable refreshrate.
 
-## Links to parts
+## Links to parts used in this project
 
 |Name|Link|
 |--|--|

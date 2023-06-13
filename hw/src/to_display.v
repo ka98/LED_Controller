@@ -1,89 +1,83 @@
-`default_nettype none
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 09/03/2022 08:19:58 PM
-// Design Name: 
-// Module Name: To_Display
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
 
 module to_display(
-    input var i_clk,
-    input var i_reset,
+    input i_clk,
+    input i_reset,
 
-    input var [7:0]i_R0,
-    input var [7:0]i_R1,
-    input var [7:0]i_G0,
-    input var [7:0]i_G1,
-    input var [7:0]i_B0,
-    input var [7:0]i_B1,
+    input [23:0]i_data0,
+    input [23:0]i_data1,
 
-    output var o_R0,
-    output var o_R1,
-    output var o_G0,
-    output var o_G1,
-    output var o_B0,
-    output var o_B1,
+    output reg o_R0,
+    output reg o_R1,
+    output reg o_G0,
+    output reg o_G1,
+    output reg o_B0,
+    output reg o_B1,
 
-    output var o_BLANK,
-    output var o_clk,
-    output var o_lat,
+    output reg o_BLANK,
+    output o_clk,
+    output reg o_lat,
 
-    output var o_A,
-    output var o_B,
-    output var o_C,
-    output var o_D,
-    output var o_E,
+    output o_A,
+    output o_B,
+    output o_C,
+    output o_D,
+    output o_E,
 
-    output var [10:0]o_address
+    output [10:0]o_address
 );
 
-typedef enum bit[2:0] {
-    OUTPUT_DATA,
-    BLANK,
-    LATCH,
-    WAIT,
-    CHANGE_ADDRESS
-} display_state_t;
+localparam [2:0]
+    INIT_BLANK = 3'b000,
+    INIT_LATCH = 3'b001,
+    OUTPUT_DATA = 3'b010,
+    BLANK = 3'b011,
+    LATCH = 3'b100,
+    WAIT = 3'b101,
+    CHANGE_ADDRESS = 3'b110;
 
-display_state_t state = LATCH;
-display_state_t next_state;
+reg [2:0] state = LATCH;
+reg [2:0] next_state;
 
-logic R0;
-logic R1;
-logic G0;
-logic G1;
-logic B0;
-logic B1;
+wire [7:0] w_R0;
+wire [7:0] w_R1;
+wire [7:0] w_G0;
+wire [7:0] w_G1;
+wire [7:0] w_B0;
+wire [7:0] w_B1;
+
+assign {w_R0, w_G0, w_B0} = i_data0;
+assign {w_R1, w_G1, w_B1} = i_data1;
+
+reg R0;
+reg R1;
+reg G0;
+reg G1;
+reg B0;
+reg B1;
 
 parameter BIT_DEPTH = 7; //Display Bitrate
 parameter RAM_BIT_DEPTH = 8; //Bitrate used in RAM
 parameter HORIZONTAL_LENGTH = 64;
 parameter VERTICAL_LENGTH = 32; //device the original value by 2 - because of double writing
 
-logic [4:0] row_addr = 0; //up to 32
-logic [2:0] line_write_counter = 0;  //bcm for writing 8 bit colors
-logic [12:0] write_wait_counter = 0; //lowest [5:0] bits are also x position
+reg [4:0] row_addr = 0; //up to 32
+reg [2:0] line_write_counter = 0;  //bcm for writing 8 bit colors
+reg [12:0] write_wait_counter = 0; //lowest [5:0] bits are also x position
 
-always_comb begin : next_state_logic
+always @(*) begin : next_state_logic
 
     next_state = state;
 
-    unique case (state)
+    case (state)
+
+        INIT_BLANK: begin
+            next_state = INIT_LATCH;
+        end
+        INIT_LATCH: begin
+            next_state = OUTPUT_DATA;
+        end
         OUTPUT_DATA: begin
             if (write_wait_counter >= HORIZONTAL_LENGTH - 1) begin //continue when writing is done
                 next_state = BLANK; 
@@ -107,11 +101,15 @@ always_comb begin : next_state_logic
         CHANGE_ADDRESS: begin
             next_state = OUTPUT_DATA;
         end
+        default: begin
+            //reset if invalid state
+            next_state = OUTPUT_DATA;
+        end
     endcase
 
 end
 
-always_comb begin : output_logic
+always @(*) begin : output_logic
 
     o_BLANK = 0;
     o_lat = 0;
@@ -123,7 +121,7 @@ always_comb begin : output_logic
     o_B0 = 0;
     o_B1 = 0;
 
-    unique case (state)
+    case (state)
         OUTPUT_DATA: begin
             o_R0 = R0;
             o_R1 = R1;
@@ -132,23 +130,41 @@ always_comb begin : output_logic
             o_B0 = B0;
             o_B1 = B1;
         end
+        INIT_BLANK: begin
+            o_BLANK = 1;
+        end
         BLANK: begin
             o_BLANK = 1;
+        end
+        INIT_LATCH: begin
+            o_BLANK = 1;
+            o_lat = 1;
         end
         LATCH: begin
             o_BLANK = 1;
             o_lat = 1;
         end
-        WAIT: begin
-        end
-        CHANGE_ADDRESS: begin
+        // WAIT: begin
+        // end
+        // CHANGE_ADDRESS: begin
+        // end
+        default: begin
+            o_BLANK = 0;
+            o_lat = 0;
+
+            o_R0 = 0;
+            o_R1 = 0;
+            o_G0 = 0;
+            o_G1 = 0;
+            o_B0 = 0;
+            o_B1 = 0;
         end
     endcase
 end
 
-always_ff @(posedge i_clk or posedge i_reset) begin : name
+always @(posedge i_clk or posedge i_reset) begin : name
     if (i_reset) begin
-        state <= OUTPUT_DATA;
+        state <= INIT_BLANK;
         row_addr <= 0;
         line_write_counter <= 0;
         write_wait_counter <= 0;
@@ -162,12 +178,12 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
     end
     else begin
 
-        R0 <= i_R0[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        R1 <= i_R1[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        G0 <= i_G0[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        G1 <= i_G1[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        B0 <= i_B0[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        B1 <= i_B1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        R0 <= w_R0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        R1 <= w_R1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        G0 <= w_G0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        G1 <= w_G1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        B0 <= w_B0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+        B1 <= w_B1[(RAM_BIT_DEPTH - 1) - line_write_counter];
 
         //default:
         state <= next_state;
@@ -175,12 +191,17 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
         line_write_counter <= line_write_counter;
         write_wait_counter <= write_wait_counter;
 
-        unique case (state)
+        case (state)
             OUTPUT_DATA: begin
                 write_wait_counter <= write_wait_counter + 1;
             end
-            BLANK: begin
+            INIT_BLANK: begin
                 
+            end
+            INIT_LATCH: begin
+                
+            end
+            BLANK: begin
             end
             LATCH: begin
             end
@@ -200,9 +221,22 @@ always_ff @(posedge i_clk or posedge i_reset) begin : name
                     if (row_addr >= VERTICAL_LENGTH - 1) begin
                         row_addr <= 0; 
                     end else begin
-                        row_addr <= row_addr + 1; 
+                        row_addr <= row_addr + 1;
                     end    
                 end
+            end
+            default: begin
+                //reset if invalid state
+                state <= OUTPUT_DATA;
+                row_addr <= 0;
+                line_write_counter <= 0;
+                write_wait_counter <= 0;
+                R0 <= 0;
+                R1 <= 0;
+                G0 <= 0;
+                G1 <= 0;
+                B0 <= 0;
+                B1 <= 0;
             end
         endcase
     end

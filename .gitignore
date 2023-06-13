@@ -72,3 +72,14 @@ xvlog.*
 
 ## checkpoint files
 *.dcp
+
+hw/LED_Controller
+sw/workspace
+a.out
+.vscode-ctags
+coverage.dat
+sim_build
+__pycache__
+results.xml
+dump.fst
+.cocotb-venv
