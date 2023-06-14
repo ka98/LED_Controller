@@ -45,11 +45,15 @@ module top_level (
 );
 
 wire [12:0] local_addr;
+wire lower_not_upper;
 wire [31:0] local_wr_data;
 wire [31:0] local_rd_data;
+wire [31:0] local_rd_data_upper;
+wire [31:0] local_rd_data_lower;
 wire local_wr;
 
-wire [23:0] ram_async_data;
+wire [23:0] ram_async_data_upper;
+wire [23:0] ram_async_data_lower;
 wire [10:0] ram_async_addr;
 
 axi4_lite_slave 
@@ -75,30 +79,42 @@ u_axi4_lite_slave(
     .axi4l_s_rresp   (axi4l_s_rresp   ),
     .axi4l_s_rvalid  (axi4l_s_rvalid  ),
     .axi4l_s_rready  (axi4l_s_rready  ),
-    .local_addr      (local_addr      ),
+    .local_addr      ({lower_not_upper, local_addr}),
     .local_wr_data   (local_wr_data   ),
     .local_rd_data   (local_rd_data   ),
     .local_wr        (local_wr        )
 );
 
-(* DONT_TOUCH = "yes" *)
-rams_dist u_rams_dist(
+assign local_rd_data = lower_not_upper ? local_rd_data_lower : local_rd_data_upper;
+
+//(* DONT_TOUCH = "yes" *)
+rams_dist frame_buffer_upper(
     .clk  (axi_clk ),
-    .we   (local_wr),
+    .we   (local_wr && !lower_not_upper),
     .a    (local_addr[12:2]),
     .dpra (ram_async_addr ),
     .di   (local_wr_data),
-    .spo  (local_rd_data),
-    .dpo  (ram_async_data)
+    .spo  (local_rd_data_upper),
+    .dpo  (ram_async_data_upper)
 );
 
-(* DONT_TOUCH = "yes" *)
+rams_dist frame_buffer_lower(
+    .clk  (axi_clk ),
+    .we   (local_wr && lower_not_upper),
+    .a    (local_addr[12:2]),
+    .dpra (ram_async_addr ),
+    .di   (local_wr_data),
+    .spo  (local_rd_data_lower),
+    .dpo  (ram_async_data_lower)
+);
+
+//(* DONT_TOUCH = "yes" *)
 to_display 
 u_to_display(
     .i_clk     (axi_clk),
     .i_reset   (axi_rst),
-    .i_data0   (ram_async_data),
-    .i_data1   (ram_async_data),
+    .i_data0   (ram_async_data_upper),
+    .i_data1   (ram_async_data_lower),
     .o_R0      (o_R0      ),
     .o_R1      (o_R1      ),
     .o_G0      (o_G0      ),
