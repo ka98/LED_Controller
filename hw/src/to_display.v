@@ -8,16 +8,16 @@ module to_display(
     input [23:0]i_data0,
     input [23:0]i_data1,
 
-    output reg o_R0,
-    output reg o_R1,
-    output reg o_G0,
-    output reg o_G1,
-    output reg o_B0,
-    output reg o_B1,
+    output o_R0,
+    output o_R1,
+    output o_G0,
+    output o_G1,
+    output o_B0,
+    output o_B1,
 
-    output reg o_BLANK,
+    output o_BLANK,
     output o_clk,
-    output reg o_lat,
+    output o_lat,
 
     output o_A,
     output o_B,
@@ -49,13 +49,6 @@ wire [7:0] w_B1;
 
 assign {w_R0, w_G0, w_B0} = i_data0;
 assign {w_R1, w_G1, w_B1} = i_data1;
-
-reg R0;
-reg R1;
-reg G0;
-reg G1;
-reg B0;
-reg B1;
 
 parameter BIT_DEPTH = 7; //Display Bitrate
 parameter RAM_BIT_DEPTH = 8; //Bitrate used in RAM
@@ -109,81 +102,15 @@ always @(*) begin : next_state_logic
 
 end
 
-always @(*) begin : output_logic
-
-    o_BLANK = 0;
-    o_lat = 0;
-
-    o_R0 = 0;
-    o_R1 = 0;
-    o_G0 = 0;
-    o_G1 = 0;
-    o_B0 = 0;
-    o_B1 = 0;
-
-    case (state)
-        OUTPUT_DATA: begin
-            o_R0 = R0;
-            o_R1 = R1;
-            o_G0 = G0;
-            o_G1 = G1;
-            o_B0 = B0;
-            o_B1 = B1;
-        end
-        INIT_BLANK: begin
-            o_BLANK = 1;
-        end
-        BLANK: begin
-            o_BLANK = 1;
-        end
-        INIT_LATCH: begin
-            o_BLANK = 1;
-            o_lat = 1;
-        end
-        LATCH: begin
-            o_BLANK = 1;
-            o_lat = 1;
-        end
-        // WAIT: begin
-        // end
-        // CHANGE_ADDRESS: begin
-        // end
-        default: begin
-            o_BLANK = 0;
-            o_lat = 0;
-
-            o_R0 = 0;
-            o_R1 = 0;
-            o_G0 = 0;
-            o_G1 = 0;
-            o_B0 = 0;
-            o_B1 = 0;
-        end
-    endcase
-end
-
 always @(posedge i_clk or posedge i_reset) begin : name
     if (i_reset) begin
         state <= INIT_BLANK;
         row_addr <= 0;
         line_write_counter <= 0;
         write_wait_counter <= 0;
-        R0 <= 0;
-        R1 <= 0;
-        G0 <= 0;
-        G1 <= 0;
-        B0 <= 0;
-        B1 <= 0;
 
     end
     else begin
-
-        R0 <= w_R0[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        R1 <= w_R1[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        G0 <= w_G0[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        G1 <= w_G1[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        B0 <= w_B0[(RAM_BIT_DEPTH - 1) - line_write_counter];
-        B1 <= w_B1[(RAM_BIT_DEPTH - 1) - line_write_counter];
 
         //default:
         state <= next_state;
@@ -231,12 +158,6 @@ always @(posedge i_clk or posedge i_reset) begin : name
                 row_addr <= 0;
                 line_write_counter <= 0;
                 write_wait_counter <= 0;
-                R0 <= 0;
-                R1 <= 0;
-                G0 <= 0;
-                G1 <= 0;
-                B0 <= 0;
-                B1 <= 0;
             end
         endcase
     end
@@ -248,5 +169,15 @@ assign {o_E, o_D, o_C, o_B, o_A} = row_addr;
 assign o_clk = (state == OUTPUT_DATA) ? i_clk : 0;
 
 assign o_address = write_wait_counter[5:0] + (row_addr * 64);
+
+assign o_R0 = w_R0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+assign o_R1 = w_R1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+assign o_G0 = w_G0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+assign o_G1 = w_G1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+assign o_B0 = w_B0[(RAM_BIT_DEPTH - 1) - line_write_counter];
+assign o_B1 = w_B1[(RAM_BIT_DEPTH - 1) - line_write_counter];
+
+assign o_BLANK = (state == BLANK || state == INIT_BLANK || state == LATCH || state == INIT_LATCH ? 1 : 0);
+assign o_lat = (state == LATCH || state == INIT_LATCH ? 1 : 0);
 
 endmodule

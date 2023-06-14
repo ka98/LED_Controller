@@ -5,25 +5,25 @@ module top_level (
     input [63:0] axi4l_s_awaddr,
     input [2:0] axi4l_s_awprot,
     input axi4l_s_awvalid,
-    output reg axi4l_s_awready,
+    output axi4l_s_awready,
 
     input [31:0] axi4l_s_wdata,
     input [3:0] axi4l_s_wstrb,
     input axi4l_s_wvalid,
-    output reg axi4l_s_wready,
+    output axi4l_s_wready,
 
     output [1:0] axi4l_s_bresp,
-    output reg axi4l_s_bvalid,
+    output axi4l_s_bvalid,
     input axi4l_s_bready,
 
     input [63:0] axi4l_s_araddr,
     input [2:0] axi4l_s_arprot,
     input axi4l_s_arvalid,
-    output reg axi4l_s_arready,
+    output axi4l_s_arready,
 
     output [31:0] axi4l_s_rdata,
     output [1:0] axi4l_s_rresp,
-    output reg axi4l_s_rvalid,
+    output axi4l_s_rvalid,
     input axi4l_s_rready,
 
     output o_R0,
@@ -81,6 +81,7 @@ u_axi4_lite_slave(
     .local_wr        (local_wr        )
 );
 
+(* DONT_TOUCH = "yes" *)
 rams_dist u_rams_dist(
     .clk  (axi_clk ),
     .we   (local_wr),
@@ -91,6 +92,7 @@ rams_dist u_rams_dist(
     .dpo  (ram_async_data)
 );
 
+(* DONT_TOUCH = "yes" *)
 to_display 
 u_to_display(
     .i_clk     (axi_clk),

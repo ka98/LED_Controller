@@ -131,7 +131,7 @@ async def smoke_video_buffer_address(dut):
     
     await Timer(100, 'ns')
     
-    for address in range (0, 8192, 4):
+    for address in range (0x4000_0000, 0x4000_1FFF, 4):
         await axil_master.write(address, b'\xff\xff\xff\xff')
 
     await Timer(10, 'ms')

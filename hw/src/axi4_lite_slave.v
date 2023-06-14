@@ -31,7 +31,7 @@ module axi4_lite_slave (
     output [31:0] local_rd_data,
     output local_wr
 );
-parameter G_BASE_ADDR = 0;
+parameter G_BASE_ADDR = 32'h40000000;
 parameter G_BASE_ADDR_SIZE = 8192;
 parameter G_BASE_ADDR_WIDTH = 13;
 
