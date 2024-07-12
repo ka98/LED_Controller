@@ -6,7 +6,7 @@ import sys
 import logging
 import cocotb
 from cocotb.clock import Clock, Timer
-from cocotb.triggers import FallingEdge, ClockCycles, with_timeout
+from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles, with_timeout
 
 from cocotb.log import SimLog
 from cocotb.triggers import Timer, RisingEdge
@@ -90,39 +90,51 @@ async def prepare_test(dut):
     cocotb.start_soon(clock.start(start_high=False))
 
     # create and start power on reset
-    reset = PORSync(dut.i_res, dut.i_clk, 44, 'ns', 1)
+    reset = PORSync(dut.i_res, dut.i_clk, 50, 'ns', 1)
     cocotb.start_soon(reset.start())
 
     # wait for the reset to be cleared
     await FallingEdge(dut.i_res)
+    await Timer(1, 'step')
 
 @cocotb.test()
-async def smoke_video_buffer_address(dut):
-    """ is the address to the video-buffer within bounds? """
+async def smoke_video_buffer_address_horizontal(dut):
+    """ is the horizontal address to the video-buffer within bounds? """
 
     await prepare_test(dut)
-    await RisingEdge(dut.i_clk)
-    dut._log.info(f"r_state={dut.r_state.value.integer}")
+
+    while int(dut.r_state) != s_write:
+        await RisingEdge(dut.i_clk)
+
+    dut._log.info(f"r_state={int(dut.r_state)}")
     assert int(dut.r_state) == s_write
-    #     assert int(dut.o_x) == 0
-    await with_timeout(ClockCycles(dut.o_clk, 63), 2150, 'ns')
-        # assert int(dut.o_x) == 63
+    for asserted_address in range(64) :    
+        dut._log.info(f"asserted_address={asserted_address}")
+        assert int(dut.o_address) == asserted_address
+        await with_timeout(RisingEdge(dut.i_clk), 35, 'ns')
+        await Timer(1)
 
 @cocotb.test()
-async def smoke_o_clk(dut):
-    """ is the output clock set exactly HORIZONTAL_LENGTH Times? """
-    
-    """This is accomplished by waiting for 32 o_clk cycles
-    with a timeout - suitable to 30Mhz"""
+async def smoke_lat_oe(dut):
+    """ do lat and oe output data? """
 
-    await prepare_test(dut)    
-    while int(dut.state) != OUTPUT_DATA:
+    await prepare_test(dut)
+    
+
+    while int(dut.r_state) != s_write:
         await RisingEdge(dut.i_clk)
-        
-    await with_timeout(ClockCycles(dut.o_clk, int(dut.HORIZONTAL_LENGTH)-1), 2150, 'ns')
+    
+    while int(dut.r_state) == s_write:
+        assert int(dut.o_oe) == 1
+        assert int(dut.o_lat) == 0
+        await RisingEdge(dut.i_clk)
+    assert int(dut.r_state) == s_output_disable
+    assert int(dut.o_oe) == 0
+    assert int(dut.o_lat) == 0
     await RisingEdge(dut.i_clk)
-    await Timer(1, 'step')
-    assert int(dut.state) != OUTPUT_DATA
+    assert int(dut.r_state) == s_latch
+    assert int(dut.o_oe) == 0
+    assert int(dut.o_lat) == 1
     
 @cocotb.test()
 async def smoke_white(dut):
@@ -133,20 +145,16 @@ async def smoke_white(dut):
 
     await prepare_test(dut)
     
-    while int(dut.state) != OUTPUT_DATA:
+    while int(dut.r_state) != s_write:
         await RisingEdge(dut.i_clk)
     
     while True:
         await RisingEdge(dut.i_clk)
-        if int(dut.state) == OUTPUT_DATA:
-            assert dut.o_R0.value
-            assert dut.o_R1.value
-            assert dut.o_G0.value
-            assert dut.o_G1.value
-            assert dut.o_B0.value
-            assert dut.o_B1.value
+        if int(dut.r_state) == s_write:
+            assert int(dut.o_data0) == 0b111
+            assert int(dut.o_data1) == 0b111
             
-        if int(dut.state.value) == BLANK:
+        if int(dut.r_state.value) == s_output_disable:
             break
 
 @cocotb.test()
@@ -158,20 +166,16 @@ async def smoke_red(dut):
 
     await prepare_test(dut)
     
-    while int(dut.state) != OUTPUT_DATA:
+    while int(dut.r_state) != s_write:
         await RisingEdge(dut.i_clk)
     
     while True:
         await RisingEdge(dut.i_clk)
-        if int(dut.state) == OUTPUT_DATA:
-            assert dut.o_R0.value
-            assert dut.o_R1.value
-            assert not dut.o_G0.value
-            assert not dut.o_G1.value
-            assert not dut.o_B0.value
-            assert not dut.o_B1.value
+        if int(dut.r_state) == s_write:
+            assert int(dut.o_data0) == 0b100
+            assert int(dut.o_data1) == 0b100
             
-        if int(dut.state.value) == BLANK:
+        if int(dut.r_state.value) == s_output_disable:
             break
         
 @cocotb.test()
@@ -183,20 +187,16 @@ async def smoke_green(dut):
 
     await prepare_test(dut)
     
-    while int(dut.state) != OUTPUT_DATA:
+    while int(dut.r_state) != s_write:
         await RisingEdge(dut.i_clk)
     
     while True:
         await RisingEdge(dut.i_clk)
-        if int(dut.state) == OUTPUT_DATA:
-            assert not dut.o_R0.value
-            assert not dut.o_R1.value
-            assert dut.o_G0.value
-            assert dut.o_G1.value
-            assert not dut.o_B0.value
-            assert not dut.o_B1.value
+        if int(dut.r_state) == s_write:
+            assert int(dut.o_data0) == 0b010
+            assert int(dut.o_data1) == 0b010
             
-        if int(dut.state.value) == BLANK:
+        if int(dut.r_state.value) == s_output_disable:
             break
         
 @cocotb.test()
@@ -208,27 +208,21 @@ async def smoke_blue(dut):
 
     await prepare_test(dut)
     
-    while int(dut.state) != OUTPUT_DATA:
+    while int(dut.r_state) != s_write:
         await RisingEdge(dut.i_clk)
     
     while True:
         await RisingEdge(dut.i_clk)
-        if int(dut.state) == OUTPUT_DATA:
-            assert not dut.o_R0.value
-            assert not dut.o_R1.value
-            assert not dut.o_G0.value
-            assert not dut.o_G1.value
-            assert dut.o_B0.value
-            assert dut.o_B1.value
+        if int(dut.r_state) == s_write:
+            assert int(dut.o_data0) == 0b001
+            assert int(dut.o_data1) == 0b001
             
-        if int(dut.state.value) == BLANK:
+        if int(dut.r_state.value) == s_output_disable:
             break
 
 @cocotb.test()
 async def smoke_custom_color(dut):
     """ put a water blue (0x256D7B) and May green (0x4C9141) to the LED """
-    
-    bit_depth = int(dut.BIT_DEPTH)
     
     dut.i_data0.value = 0x256D7B
     dut.i_data1.value = 0x4C9141
@@ -243,44 +237,66 @@ async def smoke_custom_color(dut):
 
     await prepare_test(dut)
     
-    for i in range(bit_depth):
+    for i in range(8):
     
-        while int(dut.state) != OUTPUT_DATA:
+        while int(dut.r_state) != s_write:
             await RisingEdge(dut.i_clk)
 
-        while True:
+        while int(dut.r_state) == s_write:
+            # dut._log.info(f"bcm_phase={int(dut.r_bcm_phase)}")
+            # dut._log.info(f"red_full_value={red1}")
+            # dut._log.info(f"red[7-{i}]={red1[7-i]}")
+            # dut._log.info(f"o_data1a_value={dut.o_data1.value}")
+            # dut._log.info(f"o_data1_value[2]={dut.o_data1.value[2]}")
+            assert int(dut.o_data0.value[0]) == int(red0[7-i])
+            assert int(dut.o_data1.value[0]) == int(red1[7-i])
+            assert int(dut.o_data0.value[1]) == int(green0[7-i])
+            assert int(dut.o_data1.value[1]) == int(green1[7-i])
+            assert int(dut.o_data0.value[2]) == int(blue0[7-i])
+            assert int(dut.o_data1.value[2]) == int(blue1[7-i])
             await RisingEdge(dut.i_clk)
-            if int(dut.state) == OUTPUT_DATA:
-                assert int(dut.o_R0.value) == int(red0[i])
-                assert int(dut.o_R1.value) == int(red1[i])
-                assert int(dut.o_G0.value) == int(green0[i])
-                assert int(dut.o_G1.value) == int(green1[i])
-                assert int(dut.o_B0.value) == int(blue0[i])
-                assert int(dut.o_B1.value) == int(blue1[i])
-                
-            if int(dut.state.value) == BLANK:
-                break
 
 @cocotb.test()
 async def table_bcm_timing(dut):
-    """ put a water blue (0x256D7B) and May green (0x4C9141) to the LED """
-    
-    bit_depth = int(dut.BIT_DEPTH)
+    """ check timing of bcm phases """
 
     await prepare_test(dut)
     
     cycles = []
     counter = 0
     
-    for i in range(bit_depth):
+    for i in range(8):
     
-        while int(dut.state.value) != CHANGE_ADDRESS:
-            await RisingEdge(dut.i_clk)
+        while int(dut.r_bcm_phase) == i:
             counter += 1
+            await RisingEdge(dut.i_clk)
+            
             
         cycles.append(counter)
         counter = 0
         
-        await RisingEdge(dut.i_clk)
-        
-    dut._log.info(cycles)
+    dut._log.info(f"cycles={cycles}")
+    dut._log.info(f"one line takes={sum(cycles)}")
+    dut._log.info(f"one frame takes={sum(cycles)*32}")
+    dut._log.info(f"one frame takes={(sum(cycles)*32) / 30_000_000}s")
+
+    for idx, value in enumerate(cycles):
+        if idx > 0:
+            assert cycles[idx-1] < value, "cycles is not ascending monotone"
+
+@cocotb.test()
+async def smoke_video_buffer_addres_vertical(dut):
+    """ is the horizontal address to the video-buffer within bounds? """
+
+    await prepare_test(dut)
+
+    for i in range(32):
+        for j in range(8):
+            for k in range(64) :    
+                while int(dut.r_state) != s_write:
+                    await RisingEdge(dut.i_clk)
+                    await Timer(1)
+                dut._log.info(f"asserted_address={i*64+k}")
+                assert int(dut.o_address) == i*64+k
+                await with_timeout(RisingEdge(dut.i_clk), 35, 'ns')
+                await Timer(1)
