@@ -237,7 +237,7 @@ async def smoke_custom_color(dut):
 
     await prepare_test(dut)
     
-    for i in range(8):
+    for i in range(int(dut.BIT_DEPTH)):
     
         while int(dut.r_state) != s_write:
             await RisingEdge(dut.i_clk)
@@ -245,16 +245,33 @@ async def smoke_custom_color(dut):
         while int(dut.r_state) == s_write:
             # dut._log.info(f"bcm_phase={int(dut.r_bcm_phase)}")
             # dut._log.info(f"red_full_value={red1}")
-            # dut._log.info(f"red[7-{i}]={red1[7-i]}")
+            # dut._log.info(f"red[7-{i}]={red1[int(dut.BIT_DEPTH)-1-i]}")
             # dut._log.info(f"o_data1a_value={dut.o_data1.value}")
             # dut._log.info(f"o_data1_value[2]={dut.o_data1.value[2]}")
-            assert int(dut.o_data0.value[0]) == int(red0[7-i])
-            assert int(dut.o_data1.value[0]) == int(red1[7-i])
-            assert int(dut.o_data0.value[1]) == int(green0[7-i])
-            assert int(dut.o_data1.value[1]) == int(green1[7-i])
-            assert int(dut.o_data0.value[2]) == int(blue0[7-i])
-            assert int(dut.o_data1.value[2]) == int(blue1[7-i])
+            assert int(dut.o_data0.value[0]) == int(red0[int(dut.BIT_DEPTH)-1-i])
+            assert int(dut.o_data1.value[0]) == int(red1[int(dut.BIT_DEPTH)-1-i])
+            assert int(dut.o_data0.value[1]) == int(green0[int(dut.BIT_DEPTH)-1-i])
+            assert int(dut.o_data1.value[1]) == int(green1[int(dut.BIT_DEPTH)-1-i])
+            assert int(dut.o_data0.value[2]) == int(blue0[int(dut.BIT_DEPTH)-1-i])
+            assert int(dut.o_data1.value[2]) == int(blue1[int(dut.BIT_DEPTH)-1-i])
             await RisingEdge(dut.i_clk)
+
+@cocotb.test()
+async def smoke_video_buffer_addres_vertical(dut):
+    """ is the horizontal address to the video-buffer within bounds? """
+
+    await prepare_test(dut)
+
+    for i in range(32):
+        for j in range(int(dut.BIT_DEPTH)):
+            for k in range(64) :    
+                while int(dut.r_state) != s_write:
+                    await RisingEdge(dut.i_clk)
+                    await Timer(1)
+                dut._log.info(f"asserted_address={i*64+k}")
+                assert int(dut.o_address) == i*64+k
+                await with_timeout(RisingEdge(dut.i_clk), 35, 'ns')
+                await Timer(1)
 
 @cocotb.test()
 async def table_bcm_timing(dut):
@@ -265,7 +282,7 @@ async def table_bcm_timing(dut):
     cycles = []
     counter = 0
     
-    for i in range(8):
+    for i in range(int(dut.BIT_DEPTH)):
     
         while int(dut.r_bcm_phase) == i:
             counter += 1
@@ -279,24 +296,8 @@ async def table_bcm_timing(dut):
     dut._log.info(f"one line takes={sum(cycles)}")
     dut._log.info(f"one frame takes={sum(cycles)*32}")
     dut._log.info(f"one frame takes={(sum(cycles)*32) / 30_000_000}s")
+    dut._log.info(f"dispaly will run at={1/((sum(cycles)*32) / 30_000_000)}hz")
 
     for idx, value in enumerate(cycles):
         if idx > 0:
             assert cycles[idx-1] < value, "cycles is not ascending monotone"
-
-@cocotb.test()
-async def smoke_video_buffer_addres_vertical(dut):
-    """ is the horizontal address to the video-buffer within bounds? """
-
-    await prepare_test(dut)
-
-    for i in range(32):
-        for j in range(8):
-            for k in range(64) :    
-                while int(dut.r_state) != s_write:
-                    await RisingEdge(dut.i_clk)
-                    await Timer(1)
-                dut._log.info(f"asserted_address={i*64+k}")
-                assert int(dut.o_address) == i*64+k
-                await with_timeout(RisingEdge(dut.i_clk), 35, 'ns')
-                await Timer(1)

@@ -4,6 +4,9 @@ use IEEE.numeric_std.all;
 use IEEE.math_real.all;
 
 entity bcm is
+  generic(
+    BIT_DEPTH : integer := 7
+  );
   port
   (
     i_clk : in std_logic;
@@ -15,6 +18,19 @@ entity bcm is
     o_data0 : out std_logic_vector(2 downto 0); --upper half data 
     o_data1 : out std_logic_vector(2 downto 0); --lower half data
     o_clk   : out std_logic;
+
+    o_A : out std_logic;
+    o_B : out std_logic;
+    o_C : out std_logic;
+    o_D : out std_logic;
+    o_E : out std_logic;
+
+    o_R0 : out std_logic;
+    o_R1 : out std_logic;
+    o_G0 : out std_logic;
+    o_G1 : out std_logic;
+    o_B0 : out std_logic;
+    o_B1 : out std_logic;
 
     o_lat : out std_logic;
     o_oe  : out std_logic;
@@ -40,6 +56,8 @@ architecture RTL of bcm is
   signal r_bcm_phase : integer              := 0;
 
   signal w_enable_o_clk : std_logic;
+  signal w_data0        : std_logic_vector(2 downto 0);
+  signal w_data1        : std_logic_vector(2 downto 0);
 
   signal r_wait_counter : unsigned(13 downto 0);
 
@@ -81,7 +99,7 @@ begin
 
             if r_wait_counter = shift_left(X"0043", r_bcm_phase) - X"0043" then
               r_state <= s_write;
-              if r_bcm_phase = 7 then
+              if r_bcm_phase = BIT_DEPTH - 1 then
                 r_bcm_phase <= 0;
                 r_row       <= r_row + 1;
               else
@@ -98,26 +116,26 @@ begin
   begin
 
     if i_res = '1' then
-      o_lat <= '1';
-      o_oe  <= '0';
+      o_lat          <= '1';
+      o_oe           <= '0';
       w_enable_o_clk <= '0';
     else
       case r_state is
         when s_write =>
-          o_lat <= '0';
-          o_oe  <= '1';
+          o_lat          <= '0';
+          o_oe           <= '1';
           w_enable_o_clk <= '1';
         when s_output_disable =>
-          o_lat <= '0';
-          o_oe  <= '0';
+          o_lat          <= '0';
+          o_oe           <= '0';
           w_enable_o_clk <= '0';
         when s_latch =>
-          o_lat <= '1';
-          o_oe  <= '0';
+          o_lat          <= '1';
+          o_oe           <= '0';
           w_enable_o_clk <= '0';
         when others =>
-          o_lat <= '0';
-          o_oe  <= '1';
+          o_lat          <= '0';
+          o_oe           <= '1';
           w_enable_o_clk <= '0';
       end case;
     end if;
@@ -127,7 +145,23 @@ begin
     o_clk <= i_clk when '1',
     '0' when others;
 
-  o_data0   <= i_data0(r_bcm_phase + 16) & i_data0(r_bcm_phase + 8) & i_data0(r_bcm_phase);
-  o_data1   <= i_data1(r_bcm_phase + 16) & i_data1(r_bcm_phase + 8) & i_data1(r_bcm_phase);
+  o_R0 <= w_data0(2);
+  o_R1 <= w_data1(2);
+  o_G0 <= w_data0(1);
+  o_G1 <= w_data1(1);
+  o_B0 <= w_data0(0);
+  o_B1 <= w_data1(0);
+
+  o_data0 <= w_data0;
+  o_data1 <= w_data1;
+
+  o_A <= std_logic(r_row(0));
+  o_B <= std_logic(r_row(1));
+  o_C <= std_logic(r_row(2));
+  o_D <= std_logic(r_row(3));
+  o_E <= std_logic(r_row(4));
+
+  w_data0   <= i_data0(r_bcm_phase + 16 + (8-BIT_DEPTH)) & i_data0(r_bcm_phase + 8 + (8-BIT_DEPTH)) & i_data0(r_bcm_phase + (8-BIT_DEPTH));
+  w_data1   <= i_data1(r_bcm_phase + 16 + (8-BIT_DEPTH)) & i_data1(r_bcm_phase + 8 + (8-BIT_DEPTH)) & i_data1(r_bcm_phase + (8-BIT_DEPTH));
   o_address <= std_logic_vector(r_row) & std_logic_vector(r_column);
 end RTL;
