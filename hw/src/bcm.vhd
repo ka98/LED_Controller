@@ -4,13 +4,16 @@ use IEEE.numeric_std.all;
 use IEEE.math_real.all;
 
 entity bcm is
-  generic(
+  generic
+  (
     BIT_DEPTH : integer := 7
   );
   port
   (
     i_clk : in std_logic;
     i_res : in std_logic;
+
+    i_brightness_pwm : in std_logic;
 
     i_data0 : in std_logic_vector(23 downto 0); --upper half data 
     i_data1 : in std_logic_vector(23 downto 0); --lower half data
@@ -58,6 +61,7 @@ architecture RTL of bcm is
   signal w_enable_o_clk : std_logic;
   signal w_data0        : std_logic_vector(2 downto 0);
   signal w_data1        : std_logic_vector(2 downto 0);
+  signal w_oe : std_logic;
 
   signal r_wait_counter : unsigned(13 downto 0);
 
@@ -117,25 +121,25 @@ begin
 
     if i_res = '1' then
       o_lat          <= '1';
-      o_oe           <= '0';
+      w_oe           <= '0';
       w_enable_o_clk <= '0';
     else
       case r_state is
         when s_write =>
           o_lat          <= '0';
-          o_oe           <= '1';
+          w_oe           <= '1';
           w_enable_o_clk <= '1';
         when s_output_disable =>
           o_lat          <= '0';
-          o_oe           <= '0';
+          w_oe           <= '0';
           w_enable_o_clk <= '0';
         when s_latch =>
           o_lat          <= '1';
-          o_oe           <= '0';
+          w_oe           <= '0';
           w_enable_o_clk <= '0';
         when others =>
           o_lat          <= '0';
-          o_oe           <= '1';
+          w_oe           <= '1';
           w_enable_o_clk <= '0';
       end case;
     end if;
@@ -161,7 +165,9 @@ begin
   o_D <= std_logic(r_row(3));
   o_E <= std_logic(r_row(4));
 
-  w_data0   <= i_data0(r_bcm_phase + 16 + (8-BIT_DEPTH)) & i_data0(r_bcm_phase + 8 + (8-BIT_DEPTH)) & i_data0(r_bcm_phase + (8-BIT_DEPTH));
-  w_data1   <= i_data1(r_bcm_phase + 16 + (8-BIT_DEPTH)) & i_data1(r_bcm_phase + 8 + (8-BIT_DEPTH)) & i_data1(r_bcm_phase + (8-BIT_DEPTH));
+  w_data0   <= i_data0(r_bcm_phase + 16 + (8 - BIT_DEPTH)) & i_data0(r_bcm_phase + 8 + (8 - BIT_DEPTH)) & i_data0(r_bcm_phase + (8 - BIT_DEPTH));
+  w_data1   <= i_data1(r_bcm_phase + 16 + (8 - BIT_DEPTH)) & i_data1(r_bcm_phase + 8 + (8 - BIT_DEPTH)) & i_data1(r_bcm_phase + (8 - BIT_DEPTH));
   o_address <= std_logic_vector(r_row) & std_logic_vector(r_column);
+
+  o_oe <= w_oe and i_brightness_pwm;
 end RTL;
